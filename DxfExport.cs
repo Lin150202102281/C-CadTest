@@ -22,9 +22,11 @@ namespace Cadl
 {
     public class CADEntity
     {
+        
         public string type;
         public int color;
         public string transform;
+        public ulong calCount;
     }
     public class CADLine : CADEntity
     {
@@ -83,115 +85,77 @@ namespace Cadl
     {
         public string simplifiedText;
         public string fontStyle;
-        public string alignMentPoint1;
         public double size;
+
+        public string alignMentPoint1;
+        public double rotationAngle; 
     }
+
+    public class CADInsert : CADEntity
+    {
+        public string insertPoint;
+        public double rotationAngle;
+    }
+
 
     public class DxfExport
     {
         static List<CADEntity> cadEntities = new List<CADEntity>();
-        public static void Main(string[] args)
+
+        static FileStream fs = new FileStream("D:\\C项目\\CadLCmd\\CadLCmd\\txt\\test3.txt", FileMode.Create);
+
+        static StreamWriter sw = new StreamWriter(fs, Encoding.Default);
+
+        static DxfLine dxfLine = null;
+
+        static DxfLwPolyline dxfLwPolyline = null;
+
+        static DxfXLine dxfXLine = null;
+
+        static DxfSpline dxfSpline = null;
+
+        static DxfCircle dxfCircle = null;
+
+        static DxfArc dxfArc = null;
+
+        static DxfEllipse dxfEllipse = null;
+
+        static DxfMText dxfMText = null;
+
+        static DxfText dxfText = null;
+
+        static DxfInsert dxfInsert = null;
+
+        static DxfAttributeDefinition dxfAttributeDefinition = null;
+
+        static DxfEntityCollection dxfEntityCollection = null;
+
+        static DxfBlockBegin dxfBlockBegin = null;
+
+        static DxfBlock dxfBlock = null;
+
+        static DxfMText[] KTCodes = new DxfMText[0]; //机型逗号拆分
+        static List<DxfMText> ktls = KTCodes.ToList();
+
+        static DxfText[] KTest = new DxfText[0]; //机型逗号拆分
+        static List<DxfText> ktest = KTest.ToList();
+
+        static String[] DxfType = new String[0];
+        static List<String> dxfType = DxfType.ToList();
+
+        static DxfInsert[] KInsert = new DxfInsert[0]; //机型逗号拆分
+        static List<DxfInsert> kins = KInsert.ToList();
+
+        static DxfEntityCollection[] KEC = new DxfEntityCollection[0]; //机型逗号拆分
+        static List<DxfEntityCollection> kco = KEC.ToList();
+
+        
+
+
+        static void FindEntities(DxfEntityCollection Entities)
         {
-
-
-            if (args.Length != 2)
-            {
-                args = new string[2];
-                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test1.dwg";
-                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test2.dwg";
-                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test3.dwg";
-                args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test4.dwg";
-            }
-            string format = args[0];
-            string filename = args[1];
-
-            DxfModel model = null;
-            try
-            {
-                string extension = Path.GetExtension(filename);
-                if (string.Compare(extension, ".dwg", true) == 0)
-                {
-                    model = DwgReader.Read(filename);
-                }
-                else
-                {
-                    model = DxfReader.Read(filename);
-                }
-            }
-            catch (Exception e)
-            {
-                Console.Error.WriteLine("Error occurred: " + e.Message);
-                Environment.Exit(1);
-            }
-
-            //foreach (var entityGroups in model.Entities.GroupBy(a => a.GetType()))
-            //{
-
-            //    Console.WriteLine(entityGroups.GetType());
-
-            //    //if (typeof(DxfLine) == entityGroups.Key)
-            //    //{
-            //    //    foreach (var item in entityGroups)
-            //    //    {
-            //    //        Console.WriteLine(item.Color);
-
-            //    //    }
-            //    //}
-
-            //}
-            //FileStream fs = new FileStream("D:\\C项目\\CadLCmd\\CadLCmd\\txt\\test1.txt", FileMode.Create);
-
-            FileStream fs = new FileStream("D:\\C项目\\CadLCmd\\CadLCmd\\txt\\test3.txt", FileMode.Create);
-
-
-            StreamWriter sw = new StreamWriter(fs, Encoding.Default);
-
-            DxfLine dxfLine = null;
-
-            DxfLwPolyline dxfLwPolyline = null;
-
-            DxfXLine dxfXLine = null;
-
-            DxfSpline dxfSpline = null;
-
-            DxfCircle dxfCircle = null;
-
-            DxfArc dxfArc = null;
-
-            DxfEllipse dxfEllipse = null;
-
-            DxfMText dxfMText = null;
-
-            DxfText dxfText = null;
-
-            DxfInsert dxfInsert = null;
-
-            DxfAttributeDefinition dxfAttributeDefinition = null;
-
-            DxfEntityCollection dxfEntityCollection = null;
-
-            DxfBlockBegin dxfBlockBegin = null;
-
-            DxfBlock dxfBlock = null;
-
-
-
-
-
-            //Array[] mtArr = new Array[100];
-
-
-            DxfMText[] KTCodes = new DxfMText[0]; //机型逗号拆分
-            List<DxfMText> ktls = KTCodes.ToList();
-
-            DxfText[] KTest = new DxfText[0]; //机型逗号拆分
-            List<DxfText> ktest = KTest.ToList();
-
-            String[] DxfType = new String[0];
-            List<String> dxfType = DxfType.ToList();
-
-
-            foreach (var entityGroups in model.Entities)
+            
+            foreach (var entityGroups in Entities)
             {
 
                 //Console.WriteLine(entityGroups.GetType());
@@ -224,6 +188,7 @@ namespace Cadl
 
                     CADLine cADLine = new CADLine
                     {
+                        calCount = dxfLine.OwnerObjectSoftReference.Handle,
                         type = dxfLine.GetType().Name,
                         color = dxfLine.Color.Rgb,
                         transform = dxfLine.Transform.DebugString,
@@ -270,6 +235,7 @@ namespace Cadl
 
                     CADLwPolyLine cADLwPolyLine = new CADLwPolyLine
                     {
+                        calCount = dxfLwPolyline.OwnerObjectSoftReference.Handle,
                         type = dxfLwPolyline.GetType().Name,
                         color = dxfLwPolyline.Color.Rgb,
                         transform = dxfLwPolyline.Transform.DebugString,
@@ -324,6 +290,7 @@ namespace Cadl
 
                     CADSpline cADSpline = new CADSpline
                     {
+                        calCount = dxfSpline.OwnerObjectSoftReference.Handle,
                         type = dxfSpline.GetType().Name,
                         color = dxfSpline.Color.Rgb,
                         transform = dxfSpline.Transform.DebugString,
@@ -362,6 +329,7 @@ namespace Cadl
 
                     CADCircle cADCircle = new CADCircle
                     {
+                        calCount = dxfCircle.OwnerObjectSoftReference.Handle,
                         type = dxfCircle.GetType().Name,
                         color = dxfCircle.Color.Rgb,
                         transform = dxfCircle.Transform.DebugString,
@@ -406,6 +374,7 @@ namespace Cadl
 
                     CADArc cADArc = new CADArc
                     {
+                        calCount = dxfArc.OwnerObjectSoftReference.Handle,
                         type = dxfArc.GetType().Name,
                         color = dxfArc.Color.Rgb,
                         transform = dxfArc.Transform.DebugString,
@@ -454,6 +423,7 @@ namespace Cadl
 
                     CADEllipse cADEllipse = new CADEllipse
                     {
+                        calCount = dxfEllipse.OwnerObjectSoftReference.Handle,
                         type = dxfEllipse.GetType().Name,
                         color = dxfEllipse.Color.Rgb,
                         transform = dxfEllipse.Transform.DebugString,
@@ -507,6 +477,7 @@ namespace Cadl
 
                     CADMText cADMText = new CADMText
                     {
+                        calCount = dxfMText.OwnerObjectSoftReference.Handle,
                         type = dxfMText.GetType().Name,
                         color = dxfMText.Color.Rgb,
                         transform = dxfMText.Transform.DebugString,
@@ -566,6 +537,7 @@ namespace Cadl
 
                     CADText cADText = new CADText
                     {
+                        calCount = dxfText.OwnerObjectSoftReference.Handle,
                         type = dxfText.GetType().Name,
                         color = dxfText.Color.Rgb,
                         transform = dxfText.Transform.DebugString,
@@ -575,7 +547,7 @@ namespace Cadl
                         size = dxfText.Height,
 
                         alignMentPoint1 = dxfText.AlignmentPoint1.ToString(),
-
+                        rotationAngle = dxfText.Rotation,
                     };
 
 
@@ -594,18 +566,43 @@ namespace Cadl
                 if (typeof(DxfInsert) == entityGroups.GetType())
                 {
                     dxfInsert = entityGroups as DxfInsert;
-                    //Console.WriteLine(dxfInsert);
+                    //Console.WriteLine(dxfInsert.Block.Entities.Count+"");
                     //dxfEntityCollection = dxfInsert.Block.Entities as DxfEntityCollection;
-
-                    dxfBlock = dxfInsert.OwnerObjectSoftReference as DxfBlock;
-
-                    foreach (var el in dxfBlock.Entities)
+                    if (dxfInsert.Block != null)
                     {
-                        Console.WriteLine(el.EntityType);
-
+                        FindEntities(dxfInsert.Block.Entities);
                     }
 
 
+
+                    //Console.WriteLine(dxfInsert.Block.Handle);
+                    ulong count;
+                    if (dxfInsert.Block != null)
+                    {
+                        count = dxfInsert.Block.Handle;
+
+                    }
+                    else {
+                        count = 0;
+                    }
+
+                    CADInsert cADInsert = new CADInsert
+                    {
+                        calCount = count,
+                        type = dxfInsert.GetType().Name,
+                        transform = dxfInsert.Transform.DebugString,
+
+                        insertPoint = dxfInsert.InsertionPoint.ToString(),
+                        rotationAngle = dxfInsert.Rotation,
+                    };
+
+
+                    cadEntities.Add(cADInsert);
+
+
+
+                    kins.Add(dxfInsert);
+                    kco.Add(Entities);
                 }
 
 
@@ -618,9 +615,72 @@ namespace Cadl
                 }
             }
 
+        }
+
+
+
+
+        public static void Main(string[] args)
+        {
+
+
+            if (args.Length != 2)
+            {
+                args = new string[2];
+                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test1.dwg";
+                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test2.dwg";
+                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test3.dwg";
+                args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test4.dwg";
+                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test5Insert.dwg";
+            }
+            string format = args[0];
+            string filename = args[1];
+
+            DxfModel model = null;
+            try
+            {
+                string extension = Path.GetExtension(filename);
+                if (string.Compare(extension, ".dwg", true) == 0)
+                {
+                    model = DwgReader.Read(filename);
+                }
+                else
+                {
+                    model = DxfReader.Read(filename);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine("Error occurred: " + e.Message);
+                Environment.Exit(1);
+            }
+
+            //foreach (var entityGroups in model.Entities.GroupBy(a => a.GetType()))
+            //{
+
+            //    Console.WriteLine(entityGroups.GetType());
+
+            //    //if (typeof(DxfLine) == entityGroups.Key)
+            //    //{
+            //    //    foreach (var item in entityGroups)
+            //    //    {
+            //    //        Console.WriteLine(item.Color);
+
+            //    //    }
+            //    //}
+
+            //}
+            //FileStream fs = new FileStream("D:\\C项目\\CadLCmd\\CadLCmd\\txt\\test1.txt", FileMode.Create);
+
+
+
+            FindEntities(model.Entities);
+
+
+
             string json = JsonConvert.SerializeObject(cadEntities);
             File.WriteAllText("D:\\C项目\\CadLCmd\\CadLCmd\\txt\\model.json", json);
-            File.WriteAllText("D:\\Project\\cadtest\\node_modules\\cadTestUbim\\res\\data\\dxfdata.json", json);
+            File.WriteAllText("D:\\Project\\cadtest\\node_modules\\@cadTestUbim\\res\\data\\dxfdata.json", json);
 
             //清空缓冲区
             sw.Flush();
@@ -634,6 +694,9 @@ namespace Cadl
 
             DxfType = dxfType.ToArray();
 
+            KInsert = kins.ToArray();
+
+            KEC = kco.ToArray();
 
             Console.ReadKey();
             string outfile = Path.GetDirectoryName(Path.GetFullPath(filename)) + "\\12";
