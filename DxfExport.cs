@@ -26,7 +26,7 @@ namespace Cadl
         public string type;
         public int color;
         public string transform;
-        public ulong calCount;
+        public ulong parentHandle;
     }
     public class CADLine : CADEntity
     {
@@ -95,6 +95,9 @@ namespace Cadl
     {
         public string insertPoint;
         public double rotationAngle;
+        public string insertName;
+        public ulong nowHandle;
+        public string insertScale;
     }
 
 
@@ -149,7 +152,9 @@ namespace Cadl
         static DxfEntityCollection[] KEC = new DxfEntityCollection[0]; //机型逗号拆分
         static List<DxfEntityCollection> kco = KEC.ToList();
 
-        
+        static DxfCircle[] KCIRCLE = new DxfCircle[0]; //机型逗号拆分
+        static List<DxfCircle> kcircle = KCIRCLE.ToList();
+
 
 
         static void FindEntities(DxfEntityCollection Entities)
@@ -158,39 +163,32 @@ namespace Cadl
             foreach (var entityGroups in Entities)
             {
 
-                //Console.WriteLine(entityGroups.GetType());
+                if (typeof(DxfLine) != entityGroups.GetType() && typeof(DxfLwPolyline) != entityGroups.GetType() && typeof(DxfMText) != entityGroups.GetType() && typeof(DxfText) != entityGroups.GetType() && typeof(DxfCircle) != entityGroups.GetType() && typeof(DxfHatch) != entityGroups.GetType() && typeof(DxfInsert) != entityGroups.GetType() && typeof(DxfSpline) != entityGroups.GetType()) {
+                   // Console.WriteLine(entityGroups.GetType());
+                }
+
                 dxfType.Add(entityGroups.GetType().Name);
                 if (typeof(DxfLine) == entityGroups.GetType())
                 {
                     dxfLine = entityGroups as DxfLine;
-                    //开始写入
-                    sw.Write(dxfLine.GetType());
-                    sw.WriteLine();
-                    sw.Write("开始点:");
-                    sw.Write(dxfLine.Start);
-                    sw.WriteLine();
-                    sw.Write("结束点:");
-                    sw.Write(dxfLine.End);
-                    sw.WriteLine();
-                    sw.Write("线粗:");
-                    sw.Write(dxfLine.LineWeight);
-                    sw.WriteLine();
-                    sw.Write("颜色:");
-                    sw.Write(dxfLine.Color.Rgb);
-                    sw.WriteLine();
-                    sw.Write("变换矩阵:");
-                    sw.Write(dxfLine.Transform);
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
+
+                    int color;
+
+                    if (dxfLine.Color.ColorType.ToString() == "ByLayer")
+                    {
+                        color = dxfLine.Layer.Color.Rgb;
+                    }
+                    else
+                    {
+                        color = dxfLine.Color.Rgb;
+                    }
 
 
                     CADLine cADLine = new CADLine
                     {
-                        calCount = dxfLine.OwnerObjectSoftReference.Handle,
+                        parentHandle = dxfLine.OwnerObjectSoftReference.Handle,
                         type = dxfLine.GetType().Name,
-                        color = dxfLine.Color.Rgb,
+                        color = color,
                         transform = dxfLine.Transform.DebugString,
                         startPoint = dxfLine.Start.ToString(),
                         endPoint = dxfLine.End.ToString(),
@@ -206,38 +204,29 @@ namespace Cadl
                     //Console.WriteLine(dxfLwPolyline);
 
                     dxfLwPolyline = entityGroups as DxfLwPolyline;
-                    //开始写入
-                    sw.Write(dxfLwPolyline.GetType());
-                    sw.WriteLine();
-
+                    
                     string[] arrVertices = new string[dxfLwPolyline.Vertices.Count];
                     for (int i = 0; i < dxfLwPolyline.Vertices.Count; i++)
                     {
                         arrVertices[i] = dxfLwPolyline.Vertices[i].ToString();
-                        sw.Write("经过点:");
-                        sw.Write(dxfLwPolyline.Vertices[i]);
-                        sw.WriteLine();
-
                     }
-                    sw.Write("颜色:");
-                    sw.Write(dxfLwPolyline.Color.Rgb);
-                    sw.WriteLine();
-                    sw.Write("是否关闭:");
-                    sw.Write(dxfLwPolyline.Closed);
-                    sw.WriteLine();
-                    sw.Write("变换矩阵:");
-                    sw.Write(dxfLwPolyline.Transform);
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
+
+                    int color;
+                    if (dxfLwPolyline.Color.ColorType.ToString() == "ByLayer")
+                    {
+                        color = dxfLwPolyline.Layer.Color.Rgb;
+                    }
+                    else
+                    {
+                        color = dxfLwPolyline.Color.Rgb;
+                    }
 
 
                     CADLwPolyLine cADLwPolyLine = new CADLwPolyLine
                     {
-                        calCount = dxfLwPolyline.OwnerObjectSoftReference.Handle,
+                        parentHandle = dxfLwPolyline.OwnerObjectSoftReference.Handle,
                         type = dxfLwPolyline.GetType().Name,
-                        color = dxfLwPolyline.Color.Rgb,
+                        color = color,
                         transform = dxfLwPolyline.Transform.DebugString,
 
                         vertices = arrVertices,
@@ -255,44 +244,36 @@ namespace Cadl
                 {
 
                     dxfXLine = entityGroups as DxfXLine;
-                    sw.Write(dxfXLine.GetType());
 
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
                 }
 
                 if (typeof(DxfSpline) == entityGroups.GetType())
                 {
 
                     dxfSpline = entityGroups as DxfSpline;
-                    sw.Write(dxfSpline.GetType());
-                    sw.WriteLine();
+
                     string[] arrFitPoints = new string[dxfSpline.FitPoints.Count];
                     for (int i = 0; i < dxfSpline.FitPoints.Count; i++)
                     {
                         arrFitPoints[i] = dxfSpline.FitPoints[i].ToString();
-                        sw.Write("经过点:");
-                        sw.Write(dxfSpline.FitPoints[i]);
-                        sw.WriteLine();
-
                     }
-                    sw.Write(dxfSpline.Color.Rgb);
-                    sw.WriteLine();
-                    sw.Write(dxfSpline.Transform);
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
+
+                    int color;
+                    if (dxfSpline.Color.ColorType.ToString() == "ByLayer")
+                    {
+                        color = dxfSpline.Layer.Color.Rgb;
+                    }
+                    else
+                    {
+                        color = dxfSpline.Color.Rgb;
+                    }
 
 
                     CADSpline cADSpline = new CADSpline
                     {
-                        calCount = dxfSpline.OwnerObjectSoftReference.Handle,
+                        parentHandle = dxfSpline.OwnerObjectSoftReference.Handle,
                         type = dxfSpline.GetType().Name,
-                        color = dxfSpline.Color.Rgb,
+                        color = color,
                         transform = dxfSpline.Transform.DebugString,
 
                         fitPoints = arrFitPoints,
@@ -306,32 +287,25 @@ namespace Cadl
                 if (typeof(DxfCircle) == entityGroups.GetType())
                 {
 
-                    dxfCircle = entityGroups as DxfCircle;
-                    sw.Write(dxfCircle.GetType());
-                    sw.WriteLine();
-                    sw.Write("圆心:");
-                    sw.Write(dxfCircle.Center);
-                    sw.WriteLine();
-                    sw.Write("半径:");
-                    sw.Write(dxfCircle.Radius);
-                    sw.WriteLine();
-                    sw.Write("颜色:");
-                    sw.Write(dxfCircle.Color.Rgb);
-                    sw.WriteLine();
-                    sw.Write("变换矩阵:");
-                    sw.Write(dxfCircle.Transform);
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
 
+
+                    dxfCircle = entityGroups as DxfCircle;
+
+                    int color;
+                    if (dxfCircle.Color.ColorType.ToString() == "ByLayer")
+                    {
+                        color = dxfCircle.Layer.Color.Rgb;
+                    }
+                    else {
+                        color = dxfCircle.Color.Rgb;
+                    }
 
 
                     CADCircle cADCircle = new CADCircle
                     {
-                        calCount = dxfCircle.OwnerObjectSoftReference.Handle,
+                        parentHandle = dxfCircle.OwnerObjectSoftReference.Handle,
                         type = dxfCircle.GetType().Name,
-                        color = dxfCircle.Color.Rgb,
+                        color = color,
                         transform = dxfCircle.Transform.DebugString,
 
                         center = dxfCircle.Center.ToString(),
@@ -340,43 +314,29 @@ namespace Cadl
 
                     cadEntities.Add(cADCircle);
 
-
+                    kcircle.Add(dxfCircle);
 
                 }
 
                 if (typeof(DxfArc) == entityGroups.GetType())
                 {
                     dxfArc = entityGroups as DxfArc;
-                    sw.Write(dxfArc.GetType());
-                    sw.WriteLine();
-                    sw.Write("圆心:");
-                    sw.Write(dxfArc.Center);
-                    sw.WriteLine();
-                    sw.Write("半径:");
-                    sw.Write(dxfArc.Radius);
-                    sw.WriteLine();
-                    sw.Write("开始角度:");
-                    sw.Write(dxfArc.StartAngle);
-                    sw.WriteLine();
-                    sw.Write("结束角度:");
-                    sw.Write(dxfArc.EndAngle);
-                    sw.WriteLine();
-                    sw.Write("颜色:");
-                    sw.Write(dxfArc.Color.Rgb);
-                    sw.WriteLine();
-                    sw.Write("变换矩阵:");
-                    sw.Write(dxfArc.Transform);
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
 
+                    int color;
+                    if (dxfArc.Color.ColorType.ToString() == "ByLayer")
+                    {
+                        color = dxfArc.Layer.Color.Rgb;
+                    }
+                    else
+                    {
+                        color = dxfArc.Color.Rgb;
+                    }
 
                     CADArc cADArc = new CADArc
                     {
-                        calCount = dxfArc.OwnerObjectSoftReference.Handle,
+                        parentHandle = dxfArc.OwnerObjectSoftReference.Handle,
                         type = dxfArc.GetType().Name,
-                        color = dxfArc.Color.Rgb,
+                        color = color,
                         transform = dxfArc.Transform.DebugString,
 
                         center = dxfArc.Center.ToString(),
@@ -396,36 +356,21 @@ namespace Cadl
                 {
                     dxfEllipse = entityGroups as DxfEllipse;
 
-                    sw.Write(dxfEllipse.GetType());
-                    sw.WriteLine();
-                    sw.Write("椭圆心:");
-                    sw.Write(dxfEllipse.Center);
-                    sw.WriteLine();
-                    sw.Write("椭圆X轴半径:");
-                    sw.Write(dxfEllipse.MajorAxisEndPoint);
-                    sw.WriteLine();
-                    sw.Write("椭圆Y轴半径:");
-                    sw.Write(dxfEllipse.MinorAxisEndPoint);
-                    sw.WriteLine();
-                    sw.Write("开始角:");
-                    sw.Write(dxfEllipse.StartParameter);
-                    sw.WriteLine();
-                    sw.Write("结束角:");
-                    sw.Write(dxfEllipse.EndParameter);
-                    sw.WriteLine();
-                    sw.Write("颜色:");
-                    sw.Write(dxfEllipse.Color.Rgb);
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-
+                    int color;
+                    if (dxfEllipse.Color.ColorType.ToString() == "ByLayer")
+                    {
+                        color = dxfEllipse.Layer.Color.Rgb;
+                    }
+                    else
+                    {
+                        color = dxfEllipse.Color.Rgb;
+                    }
 
                     CADEllipse cADEllipse = new CADEllipse
                     {
-                        calCount = dxfEllipse.OwnerObjectSoftReference.Handle,
+                        parentHandle = dxfEllipse.OwnerObjectSoftReference.Handle,
                         type = dxfEllipse.GetType().Name,
-                        color = dxfEllipse.Color.Rgb,
+                        color = color,
                         transform = dxfEllipse.Transform.DebugString,
 
                         center = dxfEllipse.Center.ToString(),
@@ -446,40 +391,29 @@ namespace Cadl
                 if (typeof(DxfMText) == entityGroups.GetType())
                 {
                     dxfMText = entityGroups as DxfMText;
-                    // Console.WriteLine(dxfMText);
 
-                    sw.Write(dxfMText.GetType());
-                    sw.WriteLine();
-                    sw.Write("文本:");
-                    sw.Write(dxfMText.SimplifiedText);
-                    sw.WriteLine();
-                    sw.Write("文字大小:");
-                    sw.Write(dxfMText.Height);
-                    sw.WriteLine();
-                    sw.Write("颜色:");
-                    sw.Write(dxfMText.Color.Rgb);
-                    sw.WriteLine();
-                    sw.Write("变换矩阵:");
-                    sw.Write(dxfMText.Transform);
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
+                    int color;
+                    if (dxfMText.Color.ColorType.ToString() == "ByLayer")
+                    {
+                        color = dxfMText.Layer.Color.Rgb;
+                    }
+                    else
+                    {
+                        color = dxfMText.Color.Rgb;
+                    }
+
 
                     if (dxfMText.SimplifiedText == "C座一层平面图")
                     {
-                        //Console.WriteLine(1111111111111111111);
                         ktls.Add(dxfMText);
-
-
                     }
 
 
                     CADMText cADMText = new CADMText
                     {
-                        calCount = dxfMText.OwnerObjectSoftReference.Handle,
+                        parentHandle = dxfMText.OwnerObjectSoftReference.Handle,
                         type = dxfMText.GetType().Name,
-                        color = dxfMText.Color.Rgb,
+                        color = color,
                         transform = dxfMText.Transform.DebugString,
 
                         simplifiedText = dxfMText.SimplifiedText.ToString(),
@@ -514,32 +448,22 @@ namespace Cadl
                 if (typeof(DxfText) == entityGroups.GetType())
                 {
                     dxfText = entityGroups as DxfText;
-                    // Console.WriteLine(dxfText);
 
-                    sw.Write(dxfText.GetType());
-                    sw.WriteLine();
-                    sw.Write("文本:");
-                    sw.Write(dxfText.SimplifiedText);
-                    sw.WriteLine();
-                    sw.Write("文字大小:");
-                    sw.Write(dxfText.Height);
-                    sw.WriteLine();
-                    sw.Write("颜色:");
-                    sw.Write(dxfText.Color.Rgb);
-                    sw.WriteLine();
-                    sw.Write("变换矩阵:");
-                    sw.Write(dxfText.Transform);
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
-                    sw.WriteLine();
+                    int color;
+                    if (dxfText.Color.ColorType.ToString() == "ByLayer")
+                    {
+                        color = dxfText.Layer.Color.Rgb;
+                    }
+                    else
+                    {
+                        color = dxfText.Color.Rgb;
+                    }
 
                     CADText cADText = new CADText
                     {
-                        calCount = dxfText.OwnerObjectSoftReference.Handle,
+                        parentHandle = dxfText.OwnerObjectSoftReference.Handle,
                         type = dxfText.GetType().Name,
-                        color = dxfText.Color.Rgb,
+                        color = color,
                         transform = dxfText.Transform.DebugString,
 
                         simplifiedText = dxfText.SimplifiedText.ToString(),
@@ -553,10 +477,7 @@ namespace Cadl
 
                     if (dxfText.SimplifiedText == "JS-T5-001 ")
                     {
-                        //Console.WriteLine(1111111111111111111);
                         ktest.Add(dxfText);
-
-
                     }
 
                     cadEntities.Add(cADText);
@@ -565,44 +486,43 @@ namespace Cadl
 
                 if (typeof(DxfInsert) == entityGroups.GetType())
                 {
+
                     dxfInsert = entityGroups as DxfInsert;
-                    //Console.WriteLine(dxfInsert.Block.Entities.Count+"");
-                    //dxfEntityCollection = dxfInsert.Block.Entities as DxfEntityCollection;
+                    kins.Add(dxfInsert);
+
+
                     if (dxfInsert.Block != null)
                     {
+
+                        ulong count;
+                        if (dxfInsert.Block != null)
+                        {
+                            count = dxfInsert.Block.Handle;
+
+                        }
+                        else
+                        {
+                            count = 0;
+                        }
+
+                        CADInsert cADInsert = new CADInsert();
+
+
+                        cADInsert.parentHandle = dxfInsert.OwnerObjectSoftReference.Handle; 
+                        cADInsert.type = dxfInsert.GetType().Name;
+                        cADInsert.transform = dxfInsert.Transform.DebugString;
+
+                        cADInsert.insertPoint = dxfInsert.InsertionPoint.ToString();
+                        cADInsert.rotationAngle = dxfInsert.Rotation;
+                        cADInsert.insertName = dxfInsert.Block.Name;
+                        cADInsert.nowHandle = count;
+                        cADInsert.insertScale = dxfInsert.ScaleFactor.ToString();
+
+                        cadEntities.Add(cADInsert);
+
                         FindEntities(dxfInsert.Block.Entities);
                     }
 
-
-
-                    //Console.WriteLine(dxfInsert.Block.Handle);
-                    ulong count;
-                    if (dxfInsert.Block != null)
-                    {
-                        count = dxfInsert.Block.Handle;
-
-                    }
-                    else {
-                        count = 0;
-                    }
-
-                    CADInsert cADInsert = new CADInsert
-                    {
-                        calCount = count,
-                        type = dxfInsert.GetType().Name,
-                        transform = dxfInsert.Transform.DebugString,
-
-                        insertPoint = dxfInsert.InsertionPoint.ToString(),
-                        rotationAngle = dxfInsert.Rotation,
-                    };
-
-
-                    cadEntities.Add(cADInsert);
-
-
-
-                    kins.Add(dxfInsert);
-                    kco.Add(Entities);
                 }
 
 
@@ -612,6 +532,10 @@ namespace Cadl
                     dxfAttributeDefinition = entityGroups as DxfAttributeDefinition;
                     //Console.WriteLine(dxfAttributeDefinition);
 
+                }
+
+                if (typeof(DxfDimension.Linear) == entityGroups.GetType()) {
+                    Console.WriteLine(11111);
                 }
             }
 
@@ -630,8 +554,9 @@ namespace Cadl
                 //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test1.dwg";
                 //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test2.dwg";
                 //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test3.dwg";
-                args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test4.dwg";
-                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test5Insert.dwg";
+                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test4.dwg";
+                args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test5Insert.dwg";
+                //args[1] = "D:\\C项目\\CadLCmd\\CadLCmd\\dwg\\test6.dwg";
             }
             string format = args[0];
             string filename = args[1];
@@ -698,7 +623,9 @@ namespace Cadl
 
             KEC = kco.ToArray();
 
-            Console.ReadKey();
+            KCIRCLE = kcircle.ToArray();
+
+            //Console.ReadKey();
             string outfile = Path.GetDirectoryName(Path.GetFullPath(filename)) + "\\12";
             Stream stream;
             if (format == "pdf")
